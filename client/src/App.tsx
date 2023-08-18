@@ -1,10 +1,212 @@
-import React from "react";
+//import React from "react";
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+
+declare global {
+  interface Window {
+    signUp: any;
+    logIn: any;
+    yourSubmissionWasRegistered: any;
+  }
+}
+
+function SignUpForm() {
+  const [yourSubmissionWasRegistered, setYourSubmissionWasRegistered] =
+    useState(false);
+  const [currentlySubmitting, setCurrentlySubmitting] = useState(false);
+  const [usernameIsTaked, setUsernameIsTaked] = useState(false);
+
+  const nameRef = useRef<HTMLInputElement>(null); // Add the type annotation
+  const emailRef = useRef<HTMLInputElement>(null); // Add the type annotation
+  const usernameRef = useRef<HTMLInputElement>(null); // Add the type annotation
+  const passwordRef = useRef<HTMLInputElement>(null); // Add the type annotation
+
+  useEffect(() => {
+    if (yourSubmissionWasRegistered == true) {
+      window.yourSubmissionWasRegisteredModal.showModal();
+    } else {
+      window.signUp.close();
+    }
+  }, [yourSubmissionWasRegistered]);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const formData = {
+      name: nameRef.current?.value,
+      email: emailRef.current?.value,
+      username: usernameRef.current?.value,
+      password: passwordRef.current?.value,
+    };
+
+    axios
+      .post("http://localhost:3000/sign-up", { formData })
+      .then((res) => {
+        if (res.data == "valid") {
+          setCurrentlySubmitting(false);
+          window.signUp.close();
+          setYourSubmissionWasRegistered(true);
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        if (err.response.data.error == "username is taken") {
+          setUsernameIsTaked(true);
+          setCurrentlySubmitting(false);
+        }
+      });
+    // Now you can use formData to send the data to the server or perform any other action
+  };
+  if (!yourSubmissionWasRegistered) {
+    return (
+      <dialog id="signUp" className="modal">
+        <form
+          className="modal-box border border-base-300"
+          onSubmit={(event) => {
+            handleSubmit(event);
+            setCurrentlySubmitting(true);
+          }}
+        >
+          <h3 className="font-bold text-lg mb-4">Sign up</h3>
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">What is your name? (*)</span>
+              <span className="label-text-alt">e.g. John Doe</span>
+            </label>
+            <input
+              required
+              type="text"
+              name="name"
+              placeholder="name"
+              className="input input-bordered w-full"
+              ref={nameRef}
+            />
+            <label className="label">
+              <span className="label-text-alt hidden">error message</span>
+            </label>
+          </div>
+
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">
+                What is your email address? (*)
+              </span>
+              <span className="label-text-alt">e.g. john.doe@gmail.com</span>
+            </label>
+            <input
+              required
+              type="email"
+              name="email"
+              placeholder="email address"
+              className="input input-bordered w-full"
+              ref={emailRef}
+            />
+            <label className="label">
+              <span className="label-text-alt hidden">error message</span>
+            </label>
+          </div>
+
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">Choose username (*)</span>
+              <span className="label-text-alt">e.g. x_John_Doe_x</span>
+            </label>
+            <input
+              required
+              name="username"
+              type="text"
+              placeholder="username"
+              className="input input-bordered w-full"
+              ref={usernameRef}
+            />
+            <label className="label">
+              {usernameIsTaked ? (
+                <span className="label-text-alt text-error font-semibold">
+                  username is taken, please choose a different one
+                </span>
+              ) : null}
+            </label>
+          </div>
+
+          <div className="form-control w-full">
+            <label className="label">
+              <span className="label-text">Choose a password (*)</span>
+              <span className="label-text-alt">keep this a secret</span>
+            </label>
+            <input
+              required
+              type="password"
+              name="password"
+              placeholder="Type here"
+              className="input input-bordered w-full"
+              ref={passwordRef}
+            />
+            <label className="label">
+              <span className="label-text-alt hidden">error message</span>
+            </label>
+          </div>
+          {currentlySubmitting ? (
+            <button
+              type="submit"
+              className="btn btn-secondary btn-block btn-disabled"
+            >
+              <span className="loading loading-spinner loading-md"></span>
+            </button>
+          ) : (
+            <button type="submit" className="btn btn-secondary btn-block">
+              Sign up
+            </button>
+          )}
+          <div
+            onClick={() => {
+              window.signUp.close();
+              window.logIn.showModal();
+            }}
+            className="text-center w-full mt-2 font-semibold opacity-60 text-sm select-none cursor-pointer"
+          >
+            <p>Already have an account?</p>
+          </div>
+        </form>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
+    );
+  } else {
+    return (
+      //<button className="btn" onClick={()=>window.yourSubmissionWasRegisteredModal.showModal()}>open modal</button>
+      <dialog
+        id="yourSubmissionWasRegisteredModal"
+        className="modal"
+        onClick={() => {
+          setYourSubmissionWasRegistered(false);
+        }}
+      >
+        <form method="dialog" className="modal-box border border-base-300">
+          <h3 className="font-bold text-lg"> Your account was registed!</h3>
+          <p className="py-4">you are now logged in</p>
+        </form>
+        <form method="dialog" className="modal-backdrop">
+          <button>okay</button>
+        </form>
+      </dialog>
+    );
+  }
+}
 
 function Post() {
   return (
     <div className="bg-base-100 p-4 rounded-xl border border-base-300 w-full shadow-lg">
       <h3 className="font-semibold text-base-content opacity-60 text-sm">
-        Posted by: <span className="underline">Log in to see</span>
+        Posted by:{" "}
+        <span
+          className="underline cursor-pointer"
+          onClick={() => {
+            window.logIn.showModal();
+          }}
+        >
+          Log in to see
+        </span>
       </h3>
       <h2 className="font-bold">Lorem</h2>
       <p>
@@ -128,83 +330,7 @@ function App() {
             <button>close</button>
           </form>
         </dialog>
-
-        <dialog id="signUp" className="modal">
-          <form method="dialog" className="modal-box border border-base-300">
-            <h3 className="font-bold text-lg mb-4">Sign up</h3>
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">What is your name?</span>
-                <span className="label-text-alt">e.g. John Doe</span>
-              </label>
-              <input
-                type="text"
-                placeholder="name"
-                className="input input-bordered w-full"
-              />
-              <label className="label">
-                <span className="label-text-alt hidden">Bottom Left label</span>
-              </label>
-            </div>
-
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">What is your email adress?</span>
-                <span className="label-text-alt">e.g. john.doe@gmail.com</span>
-              </label>
-              <input
-                type="text"
-                placeholder="email adress"
-                className="input input-bordered w-full"
-              />
-              <label className="label">
-                <span className="label-text-alt hidden">Bottom Left label</span>
-              </label>
-            </div>
-
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Choose username</span>
-                <span className="label-text-alt">e.g. x_John_Doe_x</span>
-              </label>
-              <input
-                type="text"
-                placeholder="username"
-                className="input input-bordered w-full"
-              />
-              <label className="label">
-                <span className="label-text-alt hidden">Bottom Left label</span>
-              </label>
-            </div>
-
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Choose a password</span>
-                <span className="label-text-alt">keep this a secret</span>
-              </label>
-              <input
-                type="password"
-                placeholder="Type here"
-                className="input input-bordered w-full"
-              />
-              <label className="label">
-                <span className="label-text-alt hidden">Bottom Left label</span>
-              </label>
-            </div>
-            <div className="btn btn-secondary btn-block">Sign up</div>
-            <button
-              onClick={() => {
-                window.logIn.showModal();
-              }}
-              className="text-center w-full mt-2 font-semibold opacity-60 text-sm select-none cursor-pointer"
-            >
-              <p>Alredy have an account?</p>
-            </button>
-          </form>
-          <form method="dialog" className="modal-backdrop">
-            <button>close</button>
-          </form>
-        </dialog>
+        <SignUpForm />
       </nav>
       <div className="flex flex-col items-center gap-4 max-w-6xl mx-auto p-4">
         <Post></Post>
